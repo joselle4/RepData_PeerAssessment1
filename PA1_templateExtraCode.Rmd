@@ -1,14 +1,14 @@
 ---
 title: "Reproducible Research: Peer Assessment 1"
 author: "JAbagat"
-date: "October 8, 2016"
+date: "October 6, 2016"
 output: 
     html_document: 
         keep_md: true
 ---
 
 Set global options: 
-```{r setup, include=TRUE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -20,8 +20,6 @@ library(timeDate)
 
 
 ## Loading and preprocessing the data
-1. Load the data (i.e. 𝚛𝚎𝚊𝚍.𝚌𝚜𝚟())
-2. Process/transform the data (if necessary) into a format suitable for your analysis
 ```{r loadData}
 # Load the data
 filePath <- "/Users/joselle4/Documents/Programming/R/coursera/activity.csv"
@@ -34,17 +32,26 @@ For this part of the assignment, ignore the missing values in the dataset.
 
 1. Calculate the total number of steps taken per day
 ```{r totalSteps}
+# Calculate mean steps per day
+meanDailySteps <- aggregate(activity$steps, 
+                       by = list(activity$date),
+                       FUN = mean)
+colnames(meanDailySteps) <- c("date", "steps")
+head(meanDailySteps)
+
 # Calculate the total number of steps taken per day
-sumDailySteps <- aggregate(steps ~ date, 
-                           activity,
-                           FUN = sum)
+sumDailySteps <- aggregate(activity$steps, 
+                       by = list(activity$date),
+                       FUN = sum)
 colnames(sumDailySteps) <- c("date", "steps")
+summary(sumDailySteps)
+head(sumDailySteps)
 ```
 
 2. If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
 ```{r histogram}
 # Make a histogram of the total number of steps taken each day
-hist(sumDailySteps$steps, xlab = "Total Steps", 
+hist(sumDailySteps$steps, xlab = "Toatl Steps", 
      main = "Total Steps per Day")
 ```
 
@@ -60,10 +67,11 @@ median(sumDailySteps$steps, na.rm = TRUE)
 1. Make a time series plot (i.e. 𝚝𝚢𝚙𝚎 = "𝚕") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 ```{r meanActivity}
 # calcualte the average steps 
-aveStepsByInterval <- aggregate(steps ~ interval,
-                                activity,
+aveStepsByInterval <- aggregate(activity$steps ~ activity$interval, 
                                 FUN = mean)
 colnames(aveStepsByInterval) <- c("interval", "steps")
+summary(aveStepsByInterval)
+head(aveStepsByInterval)
 
 # create time series plot
 gg <- ggplot(data = aveStepsByInterval, aes(x = interval, y = steps)) + 
@@ -95,14 +103,17 @@ for (i in 1:nrow(fillActivity)) {
         fillActivity$steps[i] <- aveStepsByInterval$steps[which(aveStepsByInterval$interval == fillActivity$interval[i])] 
     }
 }
+
+head(fillActivity)
+head(activity)
 ```
 
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 ```{r makeHist}
 # Calculate the total number of steps taken per day
-sumDailyStepsImp <- aggregate(steps ~ date, 
-                              fillActivity,
-                              FUN = sum)
+sumDailyStepsImp <- aggregate(fillActivity$steps, 
+                       by = list(fillActivity$date),
+                       FUN = sum)
 colnames(sumDailyStepsImp) <- c("date", "steps")
 
 # create hist
@@ -113,8 +124,7 @@ hist(sumDailyStepsImp$steps, xlab = "Total Steps",
 mean(sumDailyStepsImp$steps)
 median(sumDailyStepsImp$steps)
 ```
-
-####Conclusion: By imputing the missing data, the mean now equals the median.  
+By imputing the missing data, the mean now equals the median.  
 
 ## Are there differences in activity patterns between weekdays and weekends?
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
@@ -135,6 +145,7 @@ fillActivity$dayType <- factor(fillActivity$dayType)
 aveStepsByInterval <- aggregate(steps ~ interval + dayType, 
                                 fillActivity,
                                 FUN = mean)
+summary(aveStepsByInterval)
 
 # plot weekday and weekend steps by interval
 gg <- ggplot(data = aveStepsByInterval, aes(x = interval, y = steps)) +
@@ -145,4 +156,3 @@ gg <- ggplot(data = aveStepsByInterval, aes(x = interval, y = steps)) +
 gg
 ```
 
-####Conclusion: During weekdays, activity/steps start earlier while activity during weekends tend to start later in the day.  This suggests that this subject sleeps in on weekends.  There also tends to be more activity at a certain peak time during weekdays (probably during lunch time) as opposed to the more consistent movement during weekends.  This data also shows more activity late into the weekend which suggests that the subject sleeps later during weekends compared to weekdays.
