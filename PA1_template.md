@@ -5,6 +5,14 @@ October 6, 2016
 Set global options: 
 
 
+Load libraries:
+
+```r
+library(ggplot2)
+library(timeDate)
+```
+
+
 ## Loading and preprocessing the data
 
 ```r
@@ -106,9 +114,6 @@ median(sumDailySteps$steps, na.rm = TRUE)
 1. Make a time series plot (i.e. 𝚝𝚢𝚙𝚎 = "𝚕") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
 ```r
-# load required library
-library(ggplot2)
-
 # calcualte the average steps 
 aveStepsByInterval <- aggregate(activity$steps ~ activity$interval, 
                                 FUN = mean)
@@ -175,19 +180,121 @@ sum(is.na(activity))
 ```
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
-
-
 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
+```r
+# create new data activity
+fillActivity <- activity
+for (i in 1:nrow(fillActivity)) {
+    if(is.na(fillActivity$steps[i])) {
+        fillActivity$steps[i] <- aveStepsByInterval$steps[which(aveStepsByInterval$interval == fillActivity$interval[i])] 
+    }
+}
+
+head(fillActivity)
+```
+
+```
+##       steps       date interval
+## 1 1.7169811 2012-10-01        0
+## 2 0.3396226 2012-10-01        5
+## 3 0.1320755 2012-10-01       10
+## 4 0.1509434 2012-10-01       15
+## 5 0.0754717 2012-10-01       20
+## 6 2.0943396 2012-10-01       25
+```
+
+```r
+head(activity)
+```
+
+```
+##   steps       date interval
+## 1    NA 2012-10-01        0
+## 2    NA 2012-10-01        5
+## 3    NA 2012-10-01       10
+## 4    NA 2012-10-01       15
+## 5    NA 2012-10-01       20
+## 6    NA 2012-10-01       25
+```
 
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
+```r
+# Calculate the total number of steps taken per day
+sumDailyStepsImp <- aggregate(fillActivity$steps, 
+                       by = list(fillActivity$date),
+                       FUN = sum)
+colnames(sumDailyStepsImp) <- c("date", "steps")
 
+# create hist
+hist(sumDailyStepsImp$steps, xlab = "Total Steps", 
+     main = "Total Steps per Day (NA Imputed)")
+```
+
+![](PA1_template_files/figure-html/makeHist-1.png)<!-- -->
+
+```r
+# calculate mean and median
+mean(sumDailyStepsImp$steps)
+```
+
+```
+## [1] 10766.19
+```
+
+```r
+median(sumDailyStepsImp$steps)
+```
+
+```
+## [1] 10766.19
+```
+By imputing the missing data, the mean now equals the median.  
 
 ## Are there differences in activity patterns between weekdays and weekends?
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
+```r
+# fill new variable dayType as "weekday"
+fillActivity$dayType <- "weekday"
+
+# classify weekends
+fillActivity$dayType[isWeekend(fillActivity$date)] <- "weekend"
+
+# factor dayType
+fillActivity$dayType <- factor(fillActivity$dayType)
+```
 
 2. Make a panel plot containing a time series plot (i.e. 𝚝𝚢𝚙𝚎 = "𝚕") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). See the README file in the GitHub repository to see an example of what this plot should look like using simulated data.
 
+```r
+# calcualte the average steps by inteval
+aveStepsByInterval <- aggregate(steps ~ interval + dayType, 
+                                fillActivity,
+                                FUN = mean)
+summary(aveStepsByInterval)
+```
+
+```
+##     interval         dayType        steps        
+##  Min.   :   0.0   weekday:288   Min.   :  0.000  
+##  1st Qu.: 588.8   weekend:288   1st Qu.:  2.047  
+##  Median :1177.5                 Median : 28.133  
+##  Mean   :1177.5                 Mean   : 38.988  
+##  3rd Qu.:1766.2                 3rd Qu.: 61.263  
+##  Max.   :2355.0                 Max.   :230.378
+```
+
+```r
+# plot weekday and weekend steps by interval
+gg <- ggplot(data = aveStepsByInterval, aes(x = interval, y = steps)) +
+    geom_line(stat = "identity", aes(colour = dayType)) +
+    facet_grid(dayType ~ ., scales="fixed", space="fixed") +
+    xlab("Interval [5min]") + ylab("Ave Steps Across All Days") +
+    ggtitle("Time Series Plot: Weekday and Weekend Ave Steps by Interval")
+gg
+```
+
+![](PA1_template_files/figure-html/unnamed-chunk-1-1.png)<!-- -->
 
